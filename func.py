@@ -1,6 +1,12 @@
 import cirq
 import math
 
+
+INDENT = "  |\t"
+WIDTH = 50
+PREFIX = "-->"
+
+
 def random(mod=3):
 
         q0 = cirq.LineQubit.range(1)[0]
@@ -20,7 +26,6 @@ def random(mod=3):
 
                 res = cirq.big_endian_bits_to_int([bits[0], bits[1]])
 
-        # print(res)
         return(res)
 
 
@@ -67,10 +72,9 @@ def bob_basis_construction(basis, q):
         
         return moments
 
-def eve_basis_construction(q):
+def eve_basis_construction(basis, q):
 
         moments = []
-        basis = random(mod=2)
 
         if basis == 0:
                 moments.append(cirq.rz(math.pi/2).on(q))
@@ -93,48 +97,55 @@ def key_statistic_calc(key0, key1, clean_key):
         p0_key0 = 0
         p0_key1 = 0
         p0_clean_key = 0
-        for i in range(len(key0)):
+        for b in range(len(key0)):
                 
-                if key0[i] == 0:
+                if key0[b] == 0:
                         p0_key0 += 1
-                if key1[i] == 0:
+                if key1[b] == 0:
                         p0_key1 += 1
                 
-                if i < len(clean_key) and clean_key[i] == 0:
+                if b < len(clean_key) and clean_key[b] == 0:
                         p0_clean_key += 1
 
         p0_key0 = round(p0_key0 / len(key0) * 100, 4)
         p0_key1 = round(p0_key1 / len(key1) * 100, 4)
         p0_clean_key = round(p0_clean_key / len(clean_key) * 100, 4)
 
-        print('Статистика по ключу Алисы:')
-        print('\tдлина ключа: \t\t\t' + str(len(key0)))
-        print('\tвероятность появления 0: \t' + str(p0_key0) + '%')
+        print(INDENT, 'Статистика по грязному ключу Алисы:')
+        print(INDENT, '\tдлина ключа: \t\t\t' + str(len(key0)))
+        print(INDENT, '\tвероятность появления 0: \t' + str(p0_key0) + '%')
         
-        print()
-        print('Статистика по ключу Боба:')
-        print('\tдлина ключа: \t\t\t' + str(len(key1)))
-        print('\tвероятность появления 0: \t' + str(p0_key1) + '%')
+        print(INDENT)
+        print(INDENT, 'Статистика по грязному ключу Боба:')
+        print(INDENT, '\tдлина ключа: \t\t\t' + str(len(key1)))
+        print(INDENT, '\tвероятность появления 0: \t' + str(p0_key1) + '%')
         
-        print()
-        print('Статистика по чистому ключу:')
-        print('\tдлина ключа: \t\t\t' + str(len(clean_key)))
-        print('\tвероятность появления 0: \t' + str(p0_clean_key) + '%')
+        print(INDENT)
+        print(INDENT, 'Статистика по чистому ключу:')
+        print(INDENT, '\tдлина ключа: \t\t\t' + str(len(clean_key)))
+        print(INDENT, '\tвероятность появления 0: \t' + str(p0_clean_key) + '%')
 
         return
 
-def eva_key_statistic(key, keyE):
+def eva_key_statistic(key, keyE, clean_key, clean_keyE):
 
-        pT = 0
-        for i in range(len(key)):
+        p = 0
+        pC = 0
+        for b in range(len(key)):
                 
-                if key[i] == keyE[i]:
-                        pT += 1
-                
-        pT = round(pT / len(key) * 100, 4)
+                if key[b] == keyE[b]:
+                        p += 1
 
-        print()
-        print('Статистика угадывания Евой: \t', pT)
+                if b < len(clean_key) and clean_key[b] == clean_keyE[b]:
+                        pC += 1
+                
+        p = round((p / len(key)) * 100, 4)
+        pC = round((pC / len(clean_key)) * 100, 4)
+
+        print(INDENT)
+        print(INDENT, 'Процент угадываний Евой:')
+        print(INDENT, '\tв грязном ключе: \t', p, '%')
+        print(INDENT, '\tв чистом ключе: \t', pC, '%')
 
 
 
@@ -157,7 +168,7 @@ def do_one_iteration(bA, bB, eva=False, circ=True):
         circuit.append(bob_basis_construction(bB, qB))
 
         if eva:
-                circuit.append(eve_basis_construction(qB))
+                circuit.append(eve_basis_construction(random(mod=2), qB))
                 circuit.append(cirq.measure(qB, key='Eva'))
 
         circuit.append(cirq.X(qB))
@@ -180,18 +191,25 @@ def key_generation(length, eva=False, stat=False):
         qA = cirq.NamedQubit("Alice")
         qB = cirq.NamedQubit("Bob")
 
+        print(PREFIX, 'Генерация последовательности базисов Алисы')
         basesA = [random() for i in range(length)]
+        print(PREFIX, 'Генерация последовательности базисов Боба')
         basesB = [random() for i in range(length)]
-
+        
         keyA = []
         keyB = []
-        keyE = []
         clean_keyA = []
         clean_keyB = []
-        clean_keyE = []
         discarded_keyA = []
         discarded_keyB = []
-        
+
+        if eva:
+                print(PREFIX, 'Генерация последовательности базисов Евы')
+                basesE = [random(mod=2) for i in range(length)]
+                keyE = []
+                clean_keyE = []
+
+        print(PREFIX, 'Передача')
         for b in range(length):
 
                 circuit = cirq.Circuit()
@@ -201,7 +219,7 @@ def key_generation(length, eva=False, stat=False):
                 circuit.append(bob_basis_construction(basesB[b], qB))
 
                 if eva:
-                        circuit.append(eve_basis_construction(qB))
+                        circuit.append(eve_basis_construction(basesE[b], qB))
                         circuit.append(cirq.measure(qB, key='Eva'))
 
                 circuit.append(cirq.X(qB))
@@ -218,31 +236,41 @@ def key_generation(length, eva=False, stat=False):
 
 
         # Установление индексов совпавших базисов и формирование Алисой и Бобом своих чистых и отброшенных ключей
+        print(PREFIX, 'Проверка совпадения базисов, формирование чистых ключей\n')
         for b in range(length):
                 
                 if basis_comparison(basesA[b], basesB[b]):
                         clean_keyA.append(keyA[b])
                         clean_keyB.append(keyB[b])
-                        clean_keyE.append(keyE[b])
+                        if eva:
+                                clean_keyE.append(keyE[b])
                 else:
                         discarded_keyA.append(keyA[b])
                         discarded_keyB.append(keyB[b])
         
         # Вывод чистых ключей
-        clean_keyA_str = ""
-        clean_keyB_str = ""
+        strA_s = " ALICE KEY (" + str(len(clean_keyA)) + " bits) "
+        strA_e = " END OF ALICE KEY "
+        strB_s = " BOB KEY (" + str(len(clean_keyB)) + " bits) "
+        strB_e = " END OF BOB KEY "
+
+        clean_keyA_str = INDENT
+        clean_keyB_str = INDENT
         for b in range(len(clean_keyA)):
                 clean_keyA_str += str(clean_keyA[b])
                 clean_keyB_str += str(clean_keyB[b])
-
-        print("Alice key (" + str(len(clean_keyA)) + " bits):")
-        print('<' + clean_keyA_str + '>')
-        print("Bob key (" + str(len(clean_keyB)) + " bits):")
-        print('<' + clean_keyB_str + '>')
+                
+                if (b + 1) % WIDTH == 0 and (b + 1) != len(clean_keyA):
+                        clean_keyA_str += "\n" + INDENT
+                        clean_keyB_str += "\n" + INDENT
+                
+        print(INDENT + strA_s.center(WIDTH, '-'), clean_keyA_str, INDENT + strA_e.center(WIDTH, '-'), INDENT, sep='\n')
+        print(INDENT + strB_s.center(WIDTH, '-'), clean_keyB_str, INDENT + strB_e.center(WIDTH, '-'), sep='\n')
 
         if stat:
+                print('\n' + PREFIX, 'Расчет статистики\n')
                 key_statistic_calc(keyA, keyB, clean_keyA)
                 if eva:
-                        eva_key_statistic(clean_keyA, clean_keyE)
+                        eva_key_statistic(keyA, keyE, clean_keyA, clean_keyE)
 
         return
