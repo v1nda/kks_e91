@@ -61,12 +61,12 @@ def bob_basis_construction(basis, q):
                 moments.append(cirq.H(q))
                 moments.append(cirq.rz(math.pi/4).on(q))
                 moments.append(cirq.H(q))
+        # Если базис 1 (basis == 1), то только измерение.
         elif basis == 2:
                 moments.append(cirq.rz(rads=math.pi/2).on(q))
                 moments.append(cirq.H(q))
                 moments.append(cirq.rz(rads=(0-math.pi)/4).on(q))
                 moments.append(cirq.H(q))
-        # Если базис 1 (basis == 1), то только измерение.
         
         return moments
 
@@ -74,7 +74,8 @@ def eve_basis_construction(basis, q):
 
         moments = []
 
-        if basis == 0:
+        # Если базис 0 (basis == 0), то только измерение.
+        if basis == 1:
                 moments.append(cirq.rz(math.pi/2).on(q))
                 moments.append(cirq.H(q))
                 moments.append(cirq.rz(math.pi/4).on(q))
@@ -90,66 +91,91 @@ def basis_comparison(b0, b1):
                 return False
 
 
-def key_statistic_calc(keyA, keyB, clean_key):
+def key_statistic_calc(keyA, keyB, clean_key, discarded_keyA, discarded_keyB):
         
         p0_keyA = 0
         p0_keyB = 0
         p0_clean_key = 0
-        # p = 0
+
+        p_coinc = 0
+        p_discarded_coinc = 0
+
         for b in range(len(keyA)):
                 
                 if keyA[b] == 0:
                         p0_keyA += 1
                 if keyB[b] == 0:
                         p0_keyB += 1
-                # if keyA[b] == keyB[b]:
-                        # p += 1
+                if keyA[b] == keyB[b]:
+                        p_coinc += 1
                 
                 if b < len(clean_key) and clean_key[b] == 0:
                         p0_clean_key += 1
+                if b < len(discarded_keyA) and discarded_keyA[b] == discarded_keyB[b]:
+                        p_discarded_coinc += 1
 
         p0_keyA = round(p0_keyA / len(keyA) * 100, 4)
         p0_keyB = round(p0_keyB / len(keyB) * 100, 4)
         p0_clean_key = round(p0_clean_key / len(clean_key) * 100, 4)
+        p_coinc = round(p_coinc / len(keyA) * 100, 4)
+        p_discarded_coinc = round(p_discarded_coinc / len(discarded_keyA) * 100, 4)
 
-        print(INDENT, 'Статистика по грязному ключу Алисы:')
+        print(INDENT, 'Статистика по полному ключу Алисы:')
         print(INDENT, '\tдлина ключа: \t\t\t' + str(len(keyA)))
-        print(INDENT, '\tвероятность появления 0: \t' + str(p0_keyA) + '%')
+        print(INDENT, '\tвероятность появления 0: \t' + str(p0_keyA) + '%', '(теор. 50%)')
         
         print(INDENT)
-        print(INDENT, 'Статистика по грязному ключу Боба:')
+        print(INDENT, 'Статистика по полному ключу Боба:')
         print(INDENT, '\tдлина ключа: \t\t\t' + str(len(keyB)))
-        print(INDENT, '\tвероятность появления 0: \t' + str(p0_keyB) + '%')
+        print(INDENT, '\tвероятность появления 0: \t' + str(p0_keyB) + '%', '(теор. 50%)')
         
         print(INDENT)
         print(INDENT, 'Статистика по чистому ключу:')
         print(INDENT, '\tдлина ключа: \t\t\t' + str(len(clean_key)))
-        print(INDENT, '\tвероятность появления 0: \t' + str(p0_clean_key) + '%')
+        print(INDENT, '\tвероятность появления 0: \t' + str(p0_clean_key) + '%', '(теор. 50%)')
 
+        print(INDENT)
+        print(INDENT, 'Вероятность совпадения значений')
+        print(INDENT, 'полного ключа Алисы и Боба:\t\t' + str(p_coinc) + '%', '(теор. 72.89% без Евы)')
 
-        # print('key ' + str((p / len(keyA)) * 100) + '%')
+        print(INDENT)
+        print(INDENT, 'Вероятность совпадения значений')
+        print(INDENT, 'отброшенного ключа Алисы и Боба:\t' + str(p_discarded_coinc) + '%', '(теор. 65.14%)')
 
         return
 
-def eva_key_statistic(key, keyE, clean_key, clean_keyE):
+def eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE):
 
         p = 0
-        pC = 0
-        for b in range(len(key)):
+        p_clean = 0
+        difference = 0
+
+        for b in range(len(keyA)):
                 
-                if key[b] == keyE[b]:
+                if keyA[b] == keyE[b]:
                         p += 1
 
-                if b < len(clean_key) and clean_key[b] == clean_keyE[b]:
-                        pC += 1
+                if b < len(clean_keyA):
+
+                        if clean_keyA[b] == clean_keyE[b]:
+                                p_clean += 1
+                        if clean_keyA[b] != clean_keyB[b]:
+                                difference += 1
                 
-        p = round((p / len(key)) * 100, 4)
-        pC = round((pC / len(clean_key)) * 100, 4)
+        p = round((p / len(keyA)) * 100, 4)
+        p_clean = round((p_clean / len(clean_keyA)) * 100, 4)
 
         print(INDENT)
+        print(INDENT + ''.center(WIDTH, '-'))
+        print(INDENT)
         print(INDENT, 'Процент угадываний Евой:')
-        print(INDENT, '\tв грязном ключе: \t', p, '%')
-        print(INDENT, '\tв чистом ключе: \t', pC, '%')
+        print(INDENT, '\tв полном ключе: \t', p, '%', '(теор. 84.34%)')
+        print(INDENT, '\tв чистом ключе: \t', p_clean, '%', '(теор. 92.67%)')
+        print(INDENT)
+        print(INDENT, 'Количество ошибок в ключе Боба:')
+        print(INDENT, '\t\t\t\t', difference)
+
+        return
 
 
 
@@ -169,11 +195,12 @@ def do_one_iteration(bA, bB, eva=False, circ=True):
                 return
 
         circuit.append(alice_basis_construction(bA, qA))
-        circuit.append(bob_basis_construction(bB, qB))
 
         if eva:
                 circuit.append(eve_basis_construction(random(mod=2), qB))
                 circuit.append(cirq.measure(qB, key='Eva'))
+
+        circuit.append(bob_basis_construction(bB, qB))
 
         circuit.append(cirq.X(qB))
         circuit.append(cirq.measure(qA, qB, key='result'))
@@ -189,6 +216,8 @@ def do_one_iteration(bA, bB, eva=False, circ=True):
         if eva:
                 print('Результат перехвата:')
                 print('\tЕва: \t', (int(result.measurements['Eva'][0][0]) + 1) % 2)
+        
+        return
 
 def key_generation(length, eva=False, stat=False):
 
@@ -220,11 +249,12 @@ def key_generation(length, eva=False, stat=False):
                 circuit.append(singlet(qA, qB))
 
                 circuit.append(alice_basis_construction(basesA[b], qA))
-                circuit.append(bob_basis_construction(basesB[b], qB))
 
                 if eva:
                         circuit.append(eve_basis_construction(basesE[b], qB))
                         circuit.append(cirq.measure(qB, key='Eva'))
+
+                circuit.append(bob_basis_construction(basesB[b], qB))
 
                 circuit.append(cirq.X(qB))
                 circuit.append(cirq.measure(qA, qB, key='result'))
@@ -251,11 +281,7 @@ def key_generation(length, eva=False, stat=False):
                 else:
                         discarded_keyA.append(keyA[b])
                         discarded_keyB.append(keyB[b])
-        
-        # x = 0
-        # for b in range(len(discarded_keyA)):
-        #         if discarded_keyA[b] == discarded_keyB[b]:
-        #                 x += 1
+
 
         # Вывод чистых ключей
         strA_s = " ALICE KEY (" + str(len(clean_keyA)) + " bits) "
@@ -276,12 +302,12 @@ def key_generation(length, eva=False, stat=False):
         print(INDENT + strA_s.center(WIDTH, '-'), clean_keyA_str, INDENT + strA_e.center(WIDTH, '-'), INDENT, sep='\n')
         print(INDENT + strB_s.center(WIDTH, '-'), clean_keyB_str, INDENT + strB_e.center(WIDTH, '-'), sep='\n')
 
+
+        # Рассчет статистики
         if stat:
                 print('\n' + PREFIX, 'Расчет статистики\n')
-                key_statistic_calc(keyA, keyB, clean_keyA)
+                key_statistic_calc(keyA, keyB, clean_keyA, discarded_keyA, discarded_keyB)
                 if eva:
-                        eva_key_statistic(keyA, keyE, clean_keyA, clean_keyE)
-
-        # print('discarded key', (x / len(discarded_keyA)) * 100, '%')
+                        eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE)
         
         return
