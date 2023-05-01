@@ -93,6 +93,12 @@ def basis_comparison(b0, b1):
 
 def key_statistic_calc(keyA, keyB, clean_key, discarded_keyA, discarded_keyB):
         
+        if len(keyA) == 0 or len(clean_key) == 0 or len(discarded_keyA) == 0:
+                print(INDENT, 'Ошибка: не удалось рассчитать статистику --')
+                print(INDENT, '\tслишком мало значений')
+
+                return 0
+
         p0_keyA = 0
         p0_keyB = 0
         p0_clean_key = 0
@@ -135,14 +141,14 @@ def key_statistic_calc(keyA, keyB, clean_key, discarded_keyA, discarded_keyB):
         print(INDENT, '\tвероятность появления 0: \t' + str(p0_clean_key) + '%', '(теор. 50%)')
 
         print(INDENT)
-        print(INDENT, 'Вероятность совпадения значений')
+        print(INDENT, 'Вероятность совпадения значений бит')
         print(INDENT, 'полного ключа Алисы и Боба:\t\t' + str(p_coinc) + '%', '(теор. 72.89% без Евы)')
 
         print(INDENT)
-        print(INDENT, 'Вероятность совпадения значений')
+        print(INDENT, 'Вероятность совпадения значений бит')
         print(INDENT, 'отброшенного ключа Алисы и Боба:\t' + str(p_discarded_coinc) + '%', '(теор. 65.14%)')
 
-        return
+        return 1
 
 def eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE):
 
@@ -168,15 +174,62 @@ def eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE):
         print(INDENT)
         print(INDENT + ''.center(WIDTH, '-'))
         print(INDENT)
-        print(INDENT, 'Процент угадываний Евой:')
-        print(INDENT, '\tв полном ключе: \t', p, '%', '(теор. 84.34%)')
-        print(INDENT, '\tв чистом ключе: \t', p_clean, '%', '(теор. 92.67%)')
+        print(INDENT, 'Процент угадываний значений бит Евой:')
+        print(INDENT, '\tв полном ключе:\t\t\t', p, '%', '(теор. 84.34%)')
+        print(INDENT, '\tв чистом ключе:\t\t\t', p_clean, '%', '(теор. 92.67%)')
         print(INDENT)
-        print(INDENT, 'Количество ошибок в ключе Боба:')
-        print(INDENT, '\t\t\t\t', difference)
+        print(INDENT, 'Количество ошибок в ключе Боба:\t', difference)
 
-        return
+        return 1
 
+
+def eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_keyB):
+
+        num_of_values_A0B0 = [0, 0, 0, 0]
+        num_of_values_A0B2 = [0, 0, 0, 0]
+        num_of_values_A2B0 = [0, 0, 0, 0]
+        num_of_values_A2B2 = [0, 0, 0, 0]
+
+        for b in range(len(discarded_bases)):
+
+                if basesA[discarded_bases[b]] == 0 and basesB[discarded_bases[b]] == 0:
+                        num_of_values_A0B0[int(str(discarded_keyA[b]) + str(discarded_keyB[b]), 2)] += 1
+                
+                elif basesA[discarded_bases[b]] == 0 and basesB[discarded_bases[b]] == 2:
+                        num_of_values_A0B2[int(str(discarded_keyA[b]) + str(discarded_keyB[b]), 2)] += 1
+                
+                elif basesA[discarded_bases[b]] == 2 and basesB[discarded_bases[b]] == 0:
+                        num_of_values_A2B0[int(str(discarded_keyA[b]) + str(discarded_keyB[b]), 2)] += 1
+
+                elif basesA[discarded_bases[b]] == 2 and basesB[discarded_bases[b]] == 2:
+                        num_of_values_A2B2[int(str(discarded_keyA[b]) + str(discarded_keyB[b]), 2)] += 1
+
+        if sum(num_of_values_A0B0) == 0 or sum(num_of_values_A0B2) == 0 or sum(num_of_values_A2B0) == 0 or sum(num_of_values_A2B2) == 0:
+                print(INDENT, 'Ошибка: не удалось рассчитать значение CHSH --')
+                print(INDENT, '\tотброшенный ключ слишком мал.')
+
+                return 0
+
+        expect_A1B1 = (num_of_values_A0B0[0] - num_of_values_A0B0[1] - num_of_values_A0B0[2] + num_of_values_A0B0[3]) / sum(num_of_values_A0B0)
+        expect_A1B3 = (num_of_values_A0B2[0] - num_of_values_A0B2[1] - num_of_values_A0B2[2] + num_of_values_A0B2[3]) / sum(num_of_values_A0B2)
+        expect_A3B1 = (num_of_values_A2B0[0] - num_of_values_A2B0[1] - num_of_values_A2B0[2] + num_of_values_A2B0[3]) / sum(num_of_values_A2B0)
+        expect_A3B3 = (num_of_values_A2B2[0] - num_of_values_A2B2[1] - num_of_values_A2B2[2] + num_of_values_A2B2[3]) / sum(num_of_values_A2B2)
+
+        result = round(abs(expect_A1B1 - expect_A1B3 + expect_A3B1 + expect_A3B3), 4)
+
+        print(INDENT, 'Корреляционное значение CHSH:' + '\t\t', result)
+
+        if result <= 2:
+                print(INDENT, 'Неравенство Белла выполняется:' + '\t\t', str(result) + ' <= 2')
+                print(INDENT)
+                print(INDENT, 'Наличие криптоаналитика (Евы):' + '\t\t', 'обнаружено.')
+
+        else:
+                print(INDENT, 'Неравенство Белла не выполняется:' + '\t', str(result) + ' > 2')
+                print(INDENT)
+                print(INDENT, 'Наличие криптоаналитика (Евы):' + '\t\t', 'не обнаружено.')
+
+        return 1
 
 
 def do_one_iteration(bA, bB, eva=False, circ=True):
@@ -226,6 +279,8 @@ def key_generation(length, eva=False, stat=False):
         print(PREFIX, 'Генерация последовательности базисов Боба')
         basesB = [random() for i in range(length)]
         
+        discarded_bases = []
+
         keyA = []
         keyB = []
         clean_keyA = []
@@ -279,6 +334,7 @@ def key_generation(length, eva=False, stat=False):
                         if eva:
                                 clean_keyE.append(keyE[b])
                 else:
+                        discarded_bases.append(b)
                         discarded_keyA.append(keyA[b])
                         discarded_keyB.append(keyB[b])
 
@@ -306,8 +362,16 @@ def key_generation(length, eva=False, stat=False):
         # Рассчет статистики
         if stat:
                 print('\n' + PREFIX, 'Расчет статистики\n')
-                key_statistic_calc(keyA, keyB, clean_keyA, discarded_keyA, discarded_keyB)
+                if not key_statistic_calc(keyA, keyB, clean_keyA, discarded_keyA, discarded_keyB):
+                        return
                 if eva:
                         eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE)
         
+
+        # Обнаружение Евы
+        print('\n' + PREFIX, 'Обнаружение криптоаналитика\n')
+        eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_keyB)
+
+        print('\n' + PREFIX, 'Завершено\n')
+
         return
