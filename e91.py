@@ -20,7 +20,7 @@ def create_parser ():
         gen_parser.set_defaults(func=parse_generate_key)
 
         bit_parser = subparsers.add_parser('one_bit', help='передача одного бита')
-        bit_parser.add_argument('-b', '--basis', choices=['pi/4', 'pi/2', 'random'], default='random', help='установка базисов Алисы и Боба')
+        bit_parser.add_argument('-b', '--basis', choices=['0', 'pi/8', 'random'], default='random', help='установка базисов Алисы и Боба')
         bit_parser.add_argument('-c', '--circuit', action='store_true', help='отрисовка схемы')
         bit_parser.add_argument('-e', '--eva', action='store_true', help='передача с участием злоумышленника')
         bit_parser.set_defaults(func=parse_one_bit)
@@ -31,14 +31,18 @@ def parse_generate_key(args):
 
         func.key_generation(args.length, stat=args.stat, eva=args.eva)
 
+        return
+
 def parse_one_bit(args):
 
-        if args.basis == 'pi/4':
+        if args.basis == 'pi/8':
                 func.do_one_iteration(1, 0, eva=args.eva, circ=args.circuit)
-        elif args.basis == 'pi/2':
+        elif args.basis == '0':
                 func.do_one_iteration(2, 1, eva=args.eva, circ=args.circuit)
         else:
                 func.do_one_iteration(func.random(), func.random(), eva=args.eva, circ=args.circuit)
+
+        return
 
 
 def main():

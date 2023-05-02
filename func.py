@@ -1,5 +1,6 @@
 import cirq
 import math
+import time
 
 
 INDENT = "  |\t"
@@ -29,15 +30,42 @@ def random(mod=3):
         return(res)
 
 
-def singlet(q0, q1):
+# Функции вывода
+
+def __prefix():
+
+       return '[' + time.strftime('%H:%M:%S') + '] ' + PREFIX
+
+def __print_key(name, key):
+
+        str_s = ' ' + name + ' KEY (' + str(len(key)) + ' bits) '
+        str_e = ' END OF ' + name + ' KEY '
+
+        key_str = INDENT
+        for b in range(len(key)):
+                key_str += str(key[b])
+                
+                if (b + 1) % WIDTH == 0 and (b + 1) != len(key):
+                        key_str += "\n" + INDENT
+
+        print()        
+        print(INDENT + str_s.center(WIDTH, '-'), key_str, INDENT + str_e.center(WIDTH, '-'), sep='\n')
+        print()
+
+        return
+
+
+# Функции формирования элементов квантовой схемы
+
+def __singlet(q0, q1):
         
         m1 = cirq.Moment([cirq.X(q0), cirq.X(q1)])
         m2 = cirq.H(q0)
         m3 = cirq.CNOT(q0, q1)
 
-        return([m1, m2, m3])
+        return [m1, m2, m3]
 
-def alice_basis_construction(basis, q):
+def __alice_basis_construction(basis, q):
 
         moments = []
 
@@ -52,7 +80,7 @@ def alice_basis_construction(basis, q):
         
         return moments
 
-def bob_basis_construction(basis, q):
+def __bob_basis_construction(basis, q):
 
         moments = []
 
@@ -70,7 +98,7 @@ def bob_basis_construction(basis, q):
         
         return moments
 
-def eve_basis_construction(basis, q):
+def __eve_basis_construction(basis, q):
 
         moments = []
 
@@ -83,7 +111,7 @@ def eve_basis_construction(basis, q):
 
         return moments
 
-def basis_comparison(b0, b1):
+def __basis_comparison(b0, b1):
 
         if (b0 == 1 and b1 == 0) or (b0 == 2 and b1 == 1):
                 return True
@@ -91,11 +119,16 @@ def basis_comparison(b0, b1):
                 return False
 
 
-def key_statistic_calc(keyA, keyB, clean_key, discarded_keyA, discarded_keyB):
+# Функции рассчета статистики клочей
+
+def __key_statistic_calc(keyA, keyB, clean_key, discarded_keyA, discarded_keyB):
         
+        print()
+
         if len(keyA) == 0 or len(clean_key) == 0 or len(discarded_keyA) == 0:
                 print(INDENT, 'Ошибка: не удалось рассчитать статистику --')
                 print(INDENT, '\tслишком мало значений')
+                print()
 
                 return 0
 
@@ -148,9 +181,11 @@ def key_statistic_calc(keyA, keyB, clean_key, discarded_keyA, discarded_keyB):
         print(INDENT, 'Вероятность совпадения значений бит')
         print(INDENT, 'отброшенного ключа Алисы и Боба:\t' + str(p_discarded_coinc) + '%', '(теор. 65.14%)')
 
+        print()
+
         return 1
 
-def eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE):
+def __eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE):
 
         p = 0
         p_clean = 0
@@ -171,19 +206,20 @@ def eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE):
         p = round((p / len(keyA)) * 100, 4)
         p_clean = round((p_clean / len(clean_keyA)) * 100, 4)
 
-        print(INDENT)
-        print(INDENT + ''.center(WIDTH, '-'))
-        print(INDENT)
         print(INDENT, 'Процент угадываний значений бит Евой:')
         print(INDENT, '\tв полном ключе:\t\t\t', p, '%', '(теор. 84.34%)')
         print(INDENT, '\tв чистом ключе:\t\t\t', p_clean, '%', '(теор. 92.67%)')
         print(INDENT)
         print(INDENT, 'Количество ошибок в ключе Боба:\t', difference)
+        print()
 
-        return 1
+        return
 
+# Функция обнаружения криптоаналитика 
 
-def eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_keyB):
+def __eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_keyB):
+
+        print()
 
         num_of_values_A0B0 = [0, 0, 0, 0]
         num_of_values_A0B2 = [0, 0, 0, 0]
@@ -207,8 +243,9 @@ def eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_key
         if sum(num_of_values_A0B0) == 0 or sum(num_of_values_A0B2) == 0 or sum(num_of_values_A2B0) == 0 or sum(num_of_values_A2B2) == 0:
                 print(INDENT, 'Ошибка: не удалось рассчитать значение CHSH --')
                 print(INDENT, '\tотброшенный ключ слишком мал.')
+                print()
 
-                return 0
+                return
 
         expect_A1B1 = (num_of_values_A0B0[0] - num_of_values_A0B0[1] - num_of_values_A0B0[2] + num_of_values_A0B0[3]) / sum(num_of_values_A0B0)
         expect_A1B3 = (num_of_values_A0B2[0] - num_of_values_A0B2[1] - num_of_values_A0B2[2] + num_of_values_A0B2[3]) / sum(num_of_values_A0B2)
@@ -229,56 +266,84 @@ def eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_key
                 print(INDENT)
                 print(INDENT, 'Наличие криптоаналитика (Евы):' + '\t\t', 'не обнаружено.')
 
-        return 1
+        print()
 
+        return
+
+
+# Функция передачи одного бита
 
 def do_one_iteration(bA, bB, eva=False, circ=True):
 
-        qA = cirq.NamedQubit("Alice")
-        qB = cirq.NamedQubit("Bob")
+        # Инициализация кубитов, формирование схемы
 
+        qA = cirq.NamedQubit('Алиса')
+        qB = cirq.NamedQubit('Боб')
+
+        print(__prefix(), 'Формирование квантовой схемы.')
         circuit = cirq.Circuit()
-        circuit.append(singlet(qA, qB))
+        circuit.append(__singlet(qA, qB))
 
-        bases_coincided = basis_comparison(bA, bB)
-        if not bases_coincided:
-                print("Алисой и Бобом выбраны различные базисы:")
-                print("\tзначение отброшено.")
 
-                return
+        # Передача бита
 
-        circuit.append(alice_basis_construction(bA, qA))
+        print(__prefix(), 'Передача.')
+        circuit.append(__alice_basis_construction(bA, qA))
 
         if eva:
-                circuit.append(eve_basis_construction(random(mod=2), qB))
-                circuit.append(cirq.measure(qB, key='Eva'))
+                circuit.append(__eve_basis_construction(random(mod=2), qB))
+                circuit.append(cirq.measure(qB, key='Ева'))
 
-        circuit.append(bob_basis_construction(bB, qB))
+        circuit.append(__bob_basis_construction(bB, qB))
 
         circuit.append(cirq.X(qB))
         circuit.append(cirq.measure(qA, qB, key='result'))
 
         if circ:
+                print()
                 print(circuit)
+                print()
+
         simulator = cirq.Simulator()
         result = simulator.run(circuit, repetitions=1)
 
-        print('Результат передачи:')
-        print('\tАлиса: \t', int(result.measurements['result'][0][0]))
-        print('\tБоб: \t', int(result.measurements['result'][0][1]))
-        if eva:
-                print('Результат перехвата:')
-                print('\tЕва: \t', (int(result.measurements['Eva'][0][0]) + 1) % 2)
         
+        # Вывод результата передачи
+        
+        print(__prefix(), 'Результат передачи:')
+        print()
+        print(INDENT, 'бит Алисы:\t', int(result.measurements['result'][0][0]))
+        print(INDENT, 'бит Боба:\t', int(result.measurements['result'][0][1]))
+        
+        if eva:
+                print(INDENT, 'бит Евы:\t', (int(result.measurements['Ева'][0][0]) + 1) % 2)
+
+        print()
+        
+
+        #  Сравнение базисов
+
+        bases_coincided = __basis_comparison(bA, bB)
+
+        if not bases_coincided:
+                print(__prefix(), 'Сравнение базисов Алисы и Боба: бит отброшен.')
+        else:
+                print(__prefix(), 'Сравнение базисов Алисы и Боба.')
+
+        print(__prefix(), 'Завершено.\n')
+
         return
+
+# Функция распределения ключа
 
 def key_generation(length, eva=False, stat=False):
 
-        print(PREFIX, 'Генерация последовательности базисов Алисы')
-        basesA = [random() for i in range(length)]
-        print(PREFIX, 'Генерация последовательности базисов Боба')
-        basesB = [random() for i in range(length)]
+        # Генерация последовательностей базисов
         
+        print(__prefix(), 'Генерация последовательности базисов Алисы.')
+        basesA = [random() for i in range(length)]
+        print(__prefix(), 'Генерация последовательности базисов Боба.')
+        basesB = [random() for i in range(length)]
         discarded_bases = []
 
         keyA = []
@@ -289,27 +354,30 @@ def key_generation(length, eva=False, stat=False):
         discarded_keyB = []
 
         if eva:
-                print(PREFIX, 'Генерация последовательности базисов Евы')
+                print(__prefix(), 'Генерация последовательности базисов Евы.')
                 basesE = [random(mod=2) for i in range(length)]
                 keyE = []
                 clean_keyE = []
 
-        print(PREFIX, 'Передача')
+
+        # Формирование квантовых схем и передача битов
+        
+        print(__prefix(), 'Передача.')
         for b in range(length):
 
-                qA = cirq.NamedQubit("Alice")
-                qB = cirq.NamedQubit("Bob")
+                qA = cirq.NamedQubit('Alice')
+                qB = cirq.NamedQubit('Bob')
 
                 circuit = cirq.Circuit()
-                circuit.append(singlet(qA, qB))
+                circuit.append(__singlet(qA, qB))
 
-                circuit.append(alice_basis_construction(basesA[b], qA))
+                circuit.append(__alice_basis_construction(basesA[b], qA))
 
                 if eva:
-                        circuit.append(eve_basis_construction(basesE[b], qB))
+                        circuit.append(__eve_basis_construction(basesE[b], qB))
                         circuit.append(cirq.measure(qB, key='Eva'))
 
-                circuit.append(bob_basis_construction(basesB[b], qB))
+                circuit.append(__bob_basis_construction(basesB[b], qB))
 
                 circuit.append(cirq.X(qB))
                 circuit.append(cirq.measure(qA, qB, key='result'))
@@ -324,11 +392,12 @@ def key_generation(length, eva=False, stat=False):
                         keyE.append((int(result.measurements['Eva'][0][0]) + 1) % 2)
 
 
-        # Установление индексов совпавших базисов и формирование Алисой и Бобом своих чистых и отброшенных ключей
-        print(PREFIX, 'Проверка совпадения базисов, формирование чистых ключей\n')
+        # Установление индексов совпавших базисов и формирование Алисой и Бобом чистых и отброшенных ключей
+        
+        print(__prefix(), 'Проверка совпадения базисов, формирование чистых ключей.')
         for b in range(length):
                 
-                if basis_comparison(basesA[b], basesB[b]):
+                if __basis_comparison(basesA[b], basesB[b]):
                         clean_keyA.append(keyA[b])
                         clean_keyB.append(keyB[b])
                         if eva:
@@ -340,38 +409,29 @@ def key_generation(length, eva=False, stat=False):
 
 
         # Вывод чистых ключей
-        strA_s = " ALICE KEY (" + str(len(clean_keyA)) + " bits) "
-        strA_e = " END OF ALICE KEY "
-        strB_s = " BOB KEY (" + str(len(clean_keyB)) + " bits) "
-        strB_e = " END OF BOB KEY "
+        
+        __print_key('ALICE', clean_keyA)
+        __print_key('BOB', clean_keyB)
 
-        clean_keyA_str = INDENT
-        clean_keyB_str = INDENT
-        for b in range(len(clean_keyA)):
-                clean_keyA_str += str(clean_keyA[b])
-                clean_keyB_str += str(clean_keyB[b])
-                
-                if (b + 1) % WIDTH == 0 and (b + 1) != len(clean_keyA):
-                        clean_keyA_str += "\n" + INDENT
-                        clean_keyB_str += "\n" + INDENT
-                
-        print(INDENT + strA_s.center(WIDTH, '-'), clean_keyA_str, INDENT + strA_e.center(WIDTH, '-'), INDENT, sep='\n')
-        print(INDENT + strB_s.center(WIDTH, '-'), clean_keyB_str, INDENT + strB_e.center(WIDTH, '-'), sep='\n')
-
+        if eva:
+                __print_key('EVA', clean_keyE)
+        
 
         # Рассчет статистики
+        
         if stat:
-                print('\n' + PREFIX, 'Расчет статистики\n')
-                if not key_statistic_calc(keyA, keyB, clean_keyA, discarded_keyA, discarded_keyB):
-                        return
+                print(__prefix(), 'Расчет статистики.')
+                __key_statistic_calc(keyA, keyB, clean_keyA, discarded_keyA, discarded_keyB)
+
                 if eva:
-                        eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE)
+                        __eva_key_statistic(keyA, keyE, clean_keyA, clean_keyB, clean_keyE)
         
 
         # Обнаружение Евы
-        print('\n' + PREFIX, 'Обнаружение криптоаналитика\n')
-        eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_keyB)
+        
+        print(__prefix(), 'Обнаружение криптоаналитика.')
+        __eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_keyB)
 
-        print('\n' + PREFIX, 'Завершено\n')
+        print(__prefix(), 'Завершено.\n')
 
         return
