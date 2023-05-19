@@ -257,12 +257,12 @@ def __eva_detection(basesA, basesB, discarded_bases, discarded_keyA, discarded_k
         print(INDENT, 'Корреляционное значение CHSH:' + '\t\t', result)
 
         if result <= 2:
-                print(INDENT, 'Неравенство Белла выполняется:' + '\t\t', str(result) + ' <= 2')
+                print(INDENT, 'Неравенство CHSH выполняется:' + '\t\t', str(result) + ' <= 2')
                 print(INDENT)
                 print(INDENT, 'Наличие криптоаналитика (Евы):' + '\t\t', 'обнаружено.')
 
         else:
-                print(INDENT, 'Неравенство Белла не выполняется:' + '\t', str(result) + ' > 2')
+                print(INDENT, 'Неравенство CHSH не выполняется:' + '\t', str(result) + ' > 2')
                 print(INDENT)
                 print(INDENT, 'Наличие криптоаналитика (Евы):' + '\t\t', 'не обнаружено.')
 

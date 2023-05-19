@@ -10,7 +10,6 @@ def create_parser ():
                 epilog='(c) Виноградов Д.А. ККСО-01-18'
         )
 
-        # parser.add_argument('-h', '--help', help='Вывести это сообщение и выйти')
         subparsers = parser.add_subparsers(title='Режимы', description='возможные режимы работы')
 
         gen_parser = subparsers.add_parser('generate_key', help='режим генерации ключа')
